@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-api
+  labels:
+    app: patient-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: patient-api
+  template:
+    metadata:
+      labels:
+        app: patient-api
+    spec:
+      containers:
+      - name: patient-api
+        image: <aws_account_id>.dkr.ecr.<region>.amazonaws.com/patient-api:1.0.0
+        ports:
+        - containerPort: 80
+        env:
+         - name: DB_HOST
+           valueFrom:
+             secretKeyRef:
+               name: aws-secrets
+               key: DB_HOST
