@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: [ubuntu-latest]
     steps:
       - name: Checkout the code
@@ -19,7 +19,10 @@ jobs:
 
       - name: Build Project with Maven
         run: mvn clean install #-DskipTests
-
+  push-to-ecr:
+    needs: build
+    runs-on: [ubuntu-latest]
+    steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -46,6 +49,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -53,6 +57,7 @@ jobs:
           task-definition: springboot-app-task-definition.json
           container-name: springboot-example
           image: ${{ steps.build-image.outputs.image }}
+
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
